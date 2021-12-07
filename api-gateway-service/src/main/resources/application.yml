@@ -5,23 +5,42 @@ spring:
   application:
     name: API-GATEWAY
   cloud:
+    config:
+      enabled: true
+      uri: http://localhost:9296
     gateway:
       routes:
         - id: ENTREPOT-SERVICE
           uri: lb://ENTREPOT-SERVICE
           predicates:
             - Path=/api/v1/entrepots/**
+          filter:
+            - name: CircuitBreaker
+              args:
+                name: ENTREPOT-SERVICE
+                fallbackuri: forward:/entrepotFallBack
         - id: PRODUCT-SERVICE
           uri: lb://PRODUCT-SERVICE
           predicates:
             - Path=/api/v1/products/**
+          filter:
+            - name: CircuitBreaker
+              args:
+                name: PRODUCT-SERVICE
+                fallbackuri: forward:/productFallBack
+
+hystrix:
+  command:
+    fallbackcmd:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 4000
 
 
-eureka:
-  client:
-    register-with-eureka: true
-    fetch-registry: true
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-    instance:
-      hostname: localhost
+management:
+  endpoints:
+    web:
+      exposure:
+        include: hystrix.stream
+
